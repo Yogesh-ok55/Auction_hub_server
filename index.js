@@ -31,7 +31,7 @@ app.get("/", (req, res) => {
     res.send("<h1>Server is Running</h1>")
 });
 
-app.use("/signup",authRouter);
+app.use("/auth",authRouter);
 
 
 app.listen(process.env.PORT || 3000,()=>{
