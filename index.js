@@ -13,7 +13,7 @@ createConnection();
 
 
 app.use(cors({
-    origin:Process.env.url || "http://localhost:5173",
+    origin:"http://localhost:5173",
     credentials: true
 }))
 
