@@ -32,9 +32,7 @@ const signup = async (req, res) => {
       }
 
       // Generate JWT token
-      const token = jwt.sign({ id: result.insertId, username }, process.env.JWT_SECRET, {
-        expiresIn: "1h",
-      });
+      const token = jwt.sign({ userId: user.id, username:user.name,email:user.email }, process.env.JWT_SECRET, { expiresIn: "1h" });
 
       // Set token in an HTTP-only cookie
       res.cookie("authToken", token, {
@@ -81,10 +79,14 @@ const login = async (req, res) => {
       }
 
       // Generate JWT token
-      const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, { expiresIn: "1h" });
+      const token = jwt.sign({ userId: user.id, username:user.name,email:user.email }, process.env.JWT_SECRET, { expiresIn: "1h" });
 
       res.cookie("token", token, { httpOnly: true, secure: process.env.NODE_ENV === "production" });
-      res.status(200).json({ message: "Login successful!", token });
+      res.status(200).json({ message: "Login successful!", userData:{
+        username:user.username,
+        email:user.email,
+        profile_pic:user.profile_pic
+      } });
     });
 
   } catch (error) {
@@ -154,98 +156,67 @@ const sendOtp = async (req, res) => {
 
 
     const mailOptions = {
-      from: 'your-email@gmail.com',  // Sender email address
+      from: 'yogeshh.ok@gmail.com',  // Sender email address
       to: toEmail,  // Recipient email address
       subject: 'Your OTP for AuctionHub',  // Email subject
-      html: `  <!-- HTML Email Template -->
-            <!DOCTYPE html>
-            <html lang="en">
-            <head>
-              <meta charset="UTF-8">
-              <meta name="viewport" content="width=device-width, initial-scale=1.0">
-              <title>OTP for AuctionHub</title>
-              <style>
-                body {
-                  font-family: 'Arial', sans-serif;
-                  background-color: #f4f4f9;
-                  margin: 0;
-                  padding: 0;
-                }
-                .email-container {
-                  max-width: 600px;
-                  margin: 20px auto;
-                  background-color: #ffffff;
-                  border-radius: 8px;
-                  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-                  padding: 30px;
-                }
-                .email-header {
-                  text-align: center;
-                  margin-bottom: 20px;
-                }
-                .email-header h1 {
-                  color: #3b3b3b;
-                  font-size: 24px;
-                }
-                .otp-container {
-                  background-color: #f1f1f1;
-                  border-radius: 8px;
-                  padding: 20px;
-                  text-align: center;
-                  margin: 20px 0;
-                }
-                .otp {
-                  font-size: 30px;
-                  font-weight: bold;
-                  color: #4caf50;
-                }
-                .footer {
-                  text-align: center;
-                  margin-top: 30px;
-                  color: #777;
-                }
-                .footer a {
-                  color: #0066cc;
-                  text-decoration: none;
-                }
-                .footer p {
-                  font-size: 14px;
-                  margin: 10px 0;
-                }
-              </style>
-            </head>
-            <body>
-              <div class="email-container">
-                <div class="email-header">
-                  <h1>Welcome to AuctionHub</h1>
-                </div>
-                <div class="otp-message">
-                  <p>Hello,</p>
-                  <p>We have received a request to Register in to your AuctionHub account. Please use the following OTP to proceed:</p>
-                </div>
-                <div class="otp-container">
-                  <p class="otp">${otp}</p>
-                  <p>This OTP is valid for the next 5 minutes.</p>
-                </div>
-                <div class="footer">
-                  <p>If you did not request this OTP, please ignore this email.</p>
-                  <p>For support, visit <a href="https://www.auctionhub.com/support">AuctionHub Support</a></p>
-                </div>
-              </div>
-            </body>
-            </html>`
+      html: `<!DOCTYPE html>
+      <html>
+        <head>
+          <style>
+            body {
+              font-family: Arial, sans-serif;
+              background-color: #f7f7f7;
+              margin: 0;
+              padding: 0;
+            }
+            .container {
+              max-width: 500px;
+              margin: 40px auto;
+              background: #fff;
+              padding: 20px;
+              border-radius: 8px;
+              box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+            }
+            .otp {
+              font-size: 28px;
+              font-weight: bold;
+              color: #4caf50;
+              text-align: center;
+              margin: 20px 0;
+            }
+            .footer {
+              text-align: center;
+              font-size: 13px;
+              color: #888;
+              margin-top: 30px;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <h2 style="text-align:center;">Your OTP for AuctionHub</h2>
+            <p>Hello,</p>
+            <p>Please use the following OTP to continue:</p>
+            <div class="otp">${otp}</div>
+            <p>This OTP is valid for 5 minutes.</p>
+            <div class="footer">
+              <p>If you didn’t request this, please ignore the email.</p>
+            </div>
+          </div>
+        </body>
+      </html>`
     };
 
     try {
 
       const info = await transporter.sendMail(mailOptions);
-      //   console.log('OTP Email sent: ' + info.response);
+        console.log('OTP Email sent: ' + info.response);
     } catch (error) {
       console.log('Error sending email:', error);
       res.status(500).json({ message: "unable to send otp" })
     }
   };
-
+console.log("h")
   await sendOTPEmail(email, generatedOTP);
   res.status(200).send("otp sent");
 }
@@ -295,8 +266,33 @@ const tokenVerify = (req, res) => {
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       req.user = decoded; 
+
+      db.query("SELECT * FROM users WHERE id = ?", [req.user.userId], async (err, results) => {
+        if (err) {
+          console.error(err);
+          return res.status(500).json({ message: "Database error!" });
+        }
+  
+        if (results.length === 0) {
+          return res.status(400).json({ message: "User not found!" });
+        }
+        const user = results[0];
+      
+      
+        
+  
+      
       console.log(decoded);
-      return res.status(200).json({message:"success"});
+
+      return res.status(200).json({message:"success",
+        userData:{
+          username:user.username,
+          email:user.email,
+          profile_pic:user.profile_pic
+        }
+      });
+      })
+    
     } catch (err) {
       return res.status(403).json({message:"Invalid token"});
     }

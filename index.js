@@ -7,6 +7,7 @@ const app = express();
 const createConnection = require("./database/connections")
 
 const authRouter = require("./router/auth")
+const upload = require("./router/upload")
 configDotenv();
 
 createConnection();
@@ -27,6 +28,7 @@ app.get("/", (req, res) => {
 });
 
 app.use("/auth",authRouter);
+app.use("/upload",upload);
 
 
 app.listen(process.env.PORT || 3000,()=>{
