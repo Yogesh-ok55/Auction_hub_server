@@ -32,19 +32,13 @@ const signup = async (req, res) => {
       }
 
       // Generate JWT token
-      const token = jwt.sign({ userId: user.id, username:user.name,email:user.email }, process.env.JWT_SECRET, { expiresIn: "1h" });
+      
 
       // Set token in an HTTP-only cookie
-      res.cookie("authToken", token, {
-        httpOnly: true,   // Prevents client-side JavaScript from accessing the cookie
-        secure: process.env.NODE_ENV === "production", // Use HTTPS in production
-        maxAge: 60 * 60 * 1000, // Cookie expires in 1 hour
-        sameSite: "strict", // Prevents CSRF attacks
-      });
+      
 
       res.status(201).json({
-        message: "User registered successfully",
-        user: { id: result.insertId, username, email },
+        message: "User registered successfully"
       });
     });
   } catch (error) {
@@ -83,6 +77,7 @@ const login = async (req, res) => {
 
       res.cookie("token", token, { httpOnly: true, secure: process.env.NODE_ENV === "production" });
       res.status(200).json({ message: "Login successful!", userData:{
+        id:user.id,
         username:user.username,
         email:user.email,
         profile_pic:user.profile_pic
@@ -286,6 +281,7 @@ const tokenVerify = (req, res) => {
 
       return res.status(200).json({message:"success",
         userData:{
+          id:user.id,
           username:user.username,
           email:user.email,
           profile_pic:user.profile_pic
